@@ -18,10 +18,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"path"
+	"time"
+
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/go-openapi/strfmt"
 	"github.com/goharbor/harbor/src/common"
 	"github.com/goharbor/harbor/src/common/rbac"
+	"github.com/goharbor/harbor/src/common/utils"
 	"github.com/goharbor/harbor/src/controller/jobservice"
 	pg "github.com/goharbor/harbor/src/controller/purge"
 	"github.com/goharbor/harbor/src/controller/task"
@@ -32,7 +36,6 @@ import (
 	"github.com/goharbor/harbor/src/server/v2.0/models"
 	"github.com/goharbor/harbor/src/server/v2.0/restapi/operations/purge"
 	operation "github.com/goharbor/harbor/src/server/v2.0/restapi/operations/purge"
-	"path"
 )
 
 type purgeAPI struct {
@@ -162,7 +165,7 @@ func (p *purgeAPI) GetPurgeHistory(ctx context.Context, params purge.GetPurgeHis
 			},
 			Status:       exec.Status,
 			CreationTime: exec.StartTime,
-			UpdateTime:   exec.EndTime,
+			UpdateTime:   exec.UpdateTime,
 		})
 	}
 	var results []*models.ExecHistory
@@ -201,7 +204,7 @@ func (p *purgeAPI) GetPurgeJob(ctx context.Context, params purge.GetPurgeJobPara
 			Type: exec.Trigger,
 		},
 		CreationTime: exec.StartTime,
-		UpdateTime:   exec.EndTime,
+		UpdateTime:   exec.UpdateTime,
 	}
 
 	return operation.NewGetPurgeJobOK().WithPayload(res.ToSwagger())
@@ -249,8 +252,9 @@ func (p *purgeAPI) GetPurgeSchedule(ctx context.Context, params purge.GetPurgeSc
 		Deleted:       false,
 		JobStatus:     sch.Status,
 		Schedule: &models.ScheduleObj{
-			Cron: sch.CRON,
-			Type: sch.CRONType,
+			Cron:              sch.CRON,
+			Type:              sch.CRONType,
+			NextScheduledTime: strfmt.DateTime(utils.NextSchedule(sch.CRON, time.Now())),
 		},
 		CreationTime: strfmt.DateTime(sch.CreationTime),
 		UpdateTime:   strfmt.DateTime(sch.UpdateTime),

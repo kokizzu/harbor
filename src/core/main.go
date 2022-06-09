@@ -25,6 +25,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/goharbor/harbor/src/controller/systemartifact"
+
 	"github.com/beego/beego"
 	"github.com/goharbor/harbor/src/core/session"
 
@@ -223,7 +225,11 @@ func main() {
 	log.Infof("Version: %s, Git commit: %s", version.ReleaseVersion, version.GitCommit)
 
 	log.Info("Fix empty subiss for meta info data.")
-	oidc.FixEmptySubIss(orm.Context())
+	_, err = oidc.FixEmptySubIss(orm.Context())
+	if err != nil {
+		log.Warningf("oidc.FixEmptySubIss() errors out, error: %v", err)
+	}
+	systemartifact.ScheduleCleanupTask(ctx)
 	beego.RunWithMiddleWares("", middlewares.MiddleWares()...)
 }
 

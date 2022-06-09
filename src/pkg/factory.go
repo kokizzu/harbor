@@ -18,9 +18,12 @@ import (
 	"github.com/goharbor/harbor/src/lib/config"
 	"github.com/goharbor/harbor/src/pkg/artifact"
 	cachedArtifact "github.com/goharbor/harbor/src/pkg/cached/artifact/redis"
+	cachedManifest "github.com/goharbor/harbor/src/pkg/cached/manifest/redis"
 	cachedProject "github.com/goharbor/harbor/src/pkg/cached/project/redis"
+	cachedProjectMeta "github.com/goharbor/harbor/src/pkg/cached/project_metadata/redis"
 	cachedRepo "github.com/goharbor/harbor/src/pkg/cached/repository/redis"
 	"github.com/goharbor/harbor/src/pkg/project"
+	"github.com/goharbor/harbor/src/pkg/project/metadata"
 	"github.com/goharbor/harbor/src/pkg/repository"
 )
 
@@ -30,8 +33,12 @@ var (
 	ArtifactMgr artifact.Manager
 	// ProjectMgr is the manager for project.
 	ProjectMgr project.Manager
+	// ProjectMetaMgr is the manager for project metadata.
+	ProjectMetaMgr metadata.Manager
 	// RepositoryMgr is the manager for repository.
 	RepositoryMgr repository.Manager
+	// ManifestMgr is the manager for manifest.
+	ManifestMgr cachedManifest.CachedManager
 )
 
 // init initialize mananger for resources
@@ -39,7 +46,9 @@ func init() {
 	cacheEnabled := config.CacheEnabled()
 	initArtifactMgr(cacheEnabled)
 	initProjectMgr(cacheEnabled)
+	initProjectMetaMgr(cacheEnabled)
 	initRepositoryMgr(cacheEnabled)
+	initManifestManager(cacheEnabled)
 }
 
 func initArtifactMgr(cacheEnabled bool) {
@@ -62,6 +71,15 @@ func initProjectMgr(cacheEnabled bool) {
 	}
 }
 
+func initProjectMetaMgr(cacheEnabled bool) {
+	projectMetaMgr := metadata.New()
+	if cacheEnabled {
+		ProjectMetaMgr = cachedProjectMeta.NewManager(projectMetaMgr)
+	} else {
+		ProjectMetaMgr = projectMetaMgr
+	}
+}
+
 func initRepositoryMgr(cacheEnabled bool) {
 	repoMgr := repository.New()
 	if cacheEnabled {
@@ -69,4 +87,8 @@ func initRepositoryMgr(cacheEnabled bool) {
 	} else {
 		RepositoryMgr = repoMgr
 	}
+}
+
+func initManifestManager(cacheEnabled bool) {
+	ManifestMgr = cachedManifest.NewManager()
 }
